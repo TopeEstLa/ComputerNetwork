@@ -1,0 +1,14 @@
+# Build binaries
+chat_client
+chat_server
+chat_server_extra
+
+# Object files and libraries
+*.o
+*.a
+*.so
+*.out
+
+# Debug symbols
+*.dSYM/
+core

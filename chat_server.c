@@ -74,6 +74,7 @@ int main(int argc, char* argv[]) {
 
     printf("[System] Multi-Threaded Chat Server started on port %d.\n", port);
     printf("[System] Waiting for connections...\n");
+    fflush(stdout);
 
     // 3. Main Listener Loop
     while (1) {
@@ -98,7 +99,13 @@ int main(int argc, char* argv[]) {
             // Register socket into an open slot in the workspace array
             // TODO:
             // === STUDENT CODE START ===
-            
+            for (int i = 0; i < MAX_CLIENTS; i++) {
+                if (server.client_fds[i] == 0) {
+                    server.client_fds[i] = new_socket;
+                    server.count++;
+                    break;
+                }
+            }
             // === STUDENT CODE END ===
             pthread_mutex_unlock(&server.mutex);
 
@@ -131,6 +138,7 @@ void* client_handler(void* arg) {
     int read_size;
 
     printf("[System] Client thread spawned for Socket FD: %d\n", client_fd);
+    fflush(stdout);
 
     // Continuous receive stream loop for this worker channel
     while ((read_size = recv(client_fd, buffer, sizeof(buffer) - 1, 0)) > 0) {
@@ -142,6 +150,7 @@ void* client_handler(void* arg) {
 
     // Out of loop implies connection ended gracefully (0) or collapsed (< 0)
     printf("[System] Client on Socket FD %d disconnected.\n", client_fd);
+    fflush(stdout);
     
     // Clear registration entry and shut descriptor
     remove_client(client_fd);
@@ -169,7 +178,16 @@ void broadcast_message(const char* message, int sender_fd) {
     // Iterate through all registered client sockets and send the message to each, excluding the sender
     // TODO:
     // === STUDENT CODE START === 
-    
+    if (strncmp(message, "/register", 9) == 0) {
+        pthread_mutex_unlock(&server.mutex);
+        return;
+    }
+
+    for (int i = 0; i < MAX_CLIENTS; i++) {
+        if (server.client_fds[i] != 0 && server.client_fds[i] != sender_fd) {
+            send(server.client_fds[i], message, strlen(message), 0);
+        }
+    }
     // === STUDENT CODE END ===
     pthread_mutex_unlock(&server.mutex);
 }
@@ -190,7 +208,13 @@ void remove_client(int client_fd) {
     // Find the client_fd in the array and clear it    
     // TODO:
     // === STUDENT CODE START === 
-    
+    for (int i = 0; i < MAX_CLIENTS; i++) {
+        if (server.client_fds[i] == client_fd) {
+            server.client_fds[i] = 0;
+            server.count--;
+            break;
+        }
+    }
     // === STUDENT CODE END ===
     pthread_mutex_unlock(&server.mutex);
 }

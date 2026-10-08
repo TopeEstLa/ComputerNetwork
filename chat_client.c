@@ -56,8 +56,26 @@ int main(int argc, char* argv[]) {
      * 4. On any failure, print an error and return EXIT_FAILURE.
     */
     // === STUDENT CODE START ===
+    client_fd = socket(AF_INET, SOCK_STREAM, 0);
+    if (client_fd < 0) {
+        perror("Socket creation failed");
+        return EXIT_FAILURE;
+    }
 
+    memset(&server_addr, 0, sizeof(server_addr));
+    server_addr.sin_family = AF_INET;
+    server_addr.sin_port = htons(port);
+    if (inet_pton(AF_INET, server_ip, &server_addr.sin_addr) <= 0) {
+        perror("Invalid server IP address");
+        close(client_fd);
+        return EXIT_FAILURE;
+    }
 
+    if (connect(client_fd, (struct sockaddr*)&server_addr, sizeof(server_addr)) < 0) {
+        perror("Connection to server failed");
+        close(client_fd);
+        return EXIT_FAILURE;
+    }
     // === STUDENT CODE END ===
 
     printf("[System] Connected to server successfully. Happy chatting!\n");
@@ -74,8 +92,13 @@ int main(int argc, char* argv[]) {
      * 3. Detach the thread immediately using 'pthread_detach' so resources are reaped.
      */
     // === STUDENT CODE START ===
-
-
+    pthread_t recv_thread;
+    if (pthread_create(&recv_thread, NULL, receive_handler, (void*)(long)client_fd) != 0) {
+        perror("Failed to create reader thread");
+        close(client_fd);
+        return EXIT_FAILURE;
+    }
+    pthread_detach(recv_thread);
     // === STUDENT CODE END ===
 
     // 5. Main Thread Input Loop (stdin -> socket)
@@ -96,8 +119,24 @@ int main(int argc, char* argv[]) {
      * 6. Don't forget to reprint the prompt "> " and call 'fflush(stdout)' at the end of the loop iteration.
      */
     // === STUDENT CODE START ===
-    while (running /* Add your conditions here */) {
+    snprintf(send_buffer, sizeof(send_buffer), "/register %s\n", nickname);
+    send(client_fd, send_buffer, strlen(send_buffer), 0);
 
+    while (running && fgets(buffer, sizeof(buffer), stdin) != NULL) {
+        buffer[strcspn(buffer, "\r\n")] = '\0';
+
+        if (strcmp(buffer, "/exit") == 0) {
+            running = 0;
+            break;
+        }
+
+        if (strlen(buffer) > 0) {
+            snprintf(send_buffer, sizeof(send_buffer), "[%s]: %s\n", nickname, buffer);
+            send(client_fd, send_buffer, strlen(send_buffer), 0);
+        }
+
+        printf("> ");
+        fflush(stdout);
     }
     // === STUDENT CODE END ===
 
