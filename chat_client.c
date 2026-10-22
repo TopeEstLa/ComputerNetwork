@@ -119,7 +119,7 @@ int main(int argc, char* argv[]) {
      * 6. Don't forget to reprint the prompt "> " and call 'fflush(stdout)' at the end of the loop iteration.
      */
     // === STUDENT CODE START ===
-    snprintf(send_buffer, sizeof(send_buffer), "/register %s\n", nickname);
+    snprintf(send_buffer, sizeof(send_buffer), "/register %s\n", nickname); // Used for chat_server_extra /list & /whisper
     send(client_fd, send_buffer, strlen(send_buffer), 0);
 
     while (running && fgets(buffer, sizeof(buffer), stdin) != NULL) {

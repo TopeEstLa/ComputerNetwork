@@ -178,7 +178,7 @@ void broadcast_message(const char* message, int sender_fd) {
     // Iterate through all registered client sockets and send the message to each, excluding the sender
     // TODO:
     // === STUDENT CODE START === 
-    if (strncmp(message, "/register", 9) == 0) {
+    if (strncmp(message, "/register", 9) == 0) { //Skip if its a /register used on chat_server_extra (to don't have two chat_client)
         pthread_mutex_unlock(&server.mutex);
         return;
     }
